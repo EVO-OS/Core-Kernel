@@ -9,16 +9,12 @@
 #include <linux/fs.h>
 #include <linux/cred.h>
 #include <linux/uaccess.h>
-#include <linux/lsm_hooks.h>
 #include <linux/printk.h>
-#include <linux/compiler.h> // Ensure the `unlikely` function is declared
-
-#define CONFIG_PAGE_OFFSETUL 0xC0000000UL
+#include <linux/version.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
-MODULE_DESCRIPTION("Advanced Memory Management Module for EvoOS");
-
+MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
 
 
 // Structure for page table entry
@@ -45,17 +41,13 @@ static struct evo_memory_region *user_region;
 
 // Function prototypes
 static int init_memory_management(void);
-unsigned long some_variable; // Example, add semicolons where needed;
-static int evo_memory_init(void);
-static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
     .scan_objects = evo_scan_objects,
-    .seeks = DEFAULT_SEEKS,
-    .flags = 0,
+    .seeks = DEFAULT_SEEKS
 };
 
 // Function to initialize memory management
@@ -66,7 +58,7 @@ static int init_memory_management(void)
     if (!kernel_region)
         return -ENOMEM;
 
-    kernel_region->start_address = CONFIG_PAGE_OFFSETUL;
+    kernel_region->start_address = 0xC0000000UL; // Typical value for 32-bit systems
     kernel_region->end_address = (unsigned long)high_memory;
     kernel_region->page_table = vzalloc(sizeof(struct evo_page_table));
     if (!kernel_region->page_table) {
@@ -95,38 +87,7 @@ static int init_memory_management(void)
     return 0;
 }
 
-// Function to allocate memory
-// static void *evo_alloc_memory(unsigned long size, int flags)
-// {
-//     if (flags & GFP_KERNEL)
-//         return kmalloc(size, flags);
-//     else
-//         return vmalloc(size);
-// }
-
-// Function to free memory
-// static void evo_free_memory(void *ptr, int flags)
-// {
-//     if (flags & GFP_KERNEL)
-//         kfree(ptr);
-//     else
-//         vfree(ptr);
-// }
-
-// Function to handle page faults
-// static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address)
-// {
-//     struct page *page;
-
-//     page = alloc_page(GFP_KERNEL);
-//     if (!page)
-//         return VM_FAULT_OOM;
-
-//     if (vm_insert_page(vma, address, page))
-//         return VM_FAULT_SIGBUS;
-
-//     return VM_FAULT_NOPAGE;
-// }
+// Removed unused functions evo_alloc_memory, evo_free_memory, and evo_page_fault_handler
 
 static int evo_memory_init(void)
 {
@@ -139,41 +100,75 @@ static int evo_memory_init(void)
     }
 
     // Register memory shrinker
-    ret = register_shrinker(&evo_shrinker);
+    #if LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0)
+        ret = register_shrinker(&evo_shrinker);
+    #else
+        ret = register_shrinker(&evo_shrinker);
+    #endif
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
-        return ret;
+        goto cleanup_shrinker;
     }
+
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
     return 0;
+
+cleanup_shrinker:
+    // Clean up memory management resources
+    vfree(user_region->page_table);
+    kfree(user_region);
+    vfree(kernel_region->page_table);
+    kfree(kernel_region);
+    return ret;
 }
-
-
 
 static void evo_memory_exit(void)
 {
     printk(KERN_INFO "EvoOS: Unloading memory management module\n");
     // Clean up resources
     unregister_shrinker(&evo_shrinker);
-    vfree(user_region->page_table);
-    kfree(user_region);
-    vfree(kernel_region->page_table);
-    kfree(kernel_region);
+    if (user_region) {
+        if (user_region->page_table)
+            vfree(user_region->page_table);
+        kfree(user_region);
+    }
+    if (kernel_region) {
+        if (kernel_region->page_table)
+            vfree(kernel_region->page_table);
+        kfree(kernel_region);
+    }
 }
-
-
 
 module_init(evo_memory_init);
 module_exit(evo_memory_exit);
 
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc)
 {
-    // Return the number of reclaimable objects
-    return 0; // Placeholder, implement actual counting logic
+    // Implement actual counting logic
+    unsigned long count = 0;
+    // Example logic: count the number of free pages in the user region
+    unsigned int i;
+    for (i = 0; i < 1024; i++) {
+        if (user_region->page_table->entries[i].physical_address == 0) {
+            count++;
+        }
+    }
+    return count;
 }
 
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc)
 {
-    // Perform the actual reclaim of objects
-    return 0; // Placeholder, implement actual reclaim logic
+    // Implement actual reclaim logic
+    unsigned long reclaimed = 0;
+    // Example logic: reclaim free pages in the user region
+    unsigned int i;
+    for (i = 0; i < 1024; i++) {
+        if (user_region->page_table->entries[i].physical_address != 0) {
+            // Free the page
+            free_page(user_region->page_table->entries[i].physical_address);
+            user_region->page_table->entries[i].physical_address = 0;
+            reclaimed++;
+        }
+    }
+    return reclaimed;
 }
