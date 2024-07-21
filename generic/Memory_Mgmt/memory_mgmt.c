@@ -16,6 +16,11 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
 MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
 
+// Add missing semicolons
+static __no_sanitize_or_inline unsigned long __read_once_word_nocheck(const void *addr) { return *(const unsigned long *)addr; }
+
+static __no_kasan_or_inline unsigned long read_word_at_a_time(const void *addr) { return *(const unsigned long *)addr; }
+
 // Structure for page table entry
 struct evo_pte {
     unsigned long physical_address;
@@ -43,8 +48,8 @@ static int init_memory_management(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static void memory_management(void);
-static int evo_memory_init(void);
-static void evo_memory_exit(void);
+static int __init evo_memory_init(void);
+static void __exit evo_memory_exit(void);
 
 // Define 'unlikely' if not already defined
 #ifndef unlikely
@@ -123,14 +128,14 @@ static void memory_management(void)
 }
 
 // Support for Dynamically Loadable Kernel Modules (DLKMs)
-static int evo_memory_init(void)
+static int __init evo_memory_init(void)
 {
     printk(KERN_INFO "EvoOS: Loading memory management module\n");
     memory_management();
     return 0;
 }
 
-static void evo_memory_exit(void)
+static void __exit evo_memory_exit(void)
 {
     printk(KERN_INFO "EvoOS: Unloading memory management module\n");
     // Clean up resources
@@ -140,6 +145,9 @@ static void evo_memory_exit(void)
     vfree(kernel_region->page_table);
     kfree(kernel_region);
 }
+
+module_init(evo_memory_init);
+module_exit(evo_memory_exit);
 
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc)
 {
@@ -152,6 +160,3 @@ static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_c
     // Perform the actual reclaim of objects
     return 0; // Placeholder, implement actual reclaim logic
 }
-
-module_init(evo_memory_init);
-module_exit(evo_memory_exit);
