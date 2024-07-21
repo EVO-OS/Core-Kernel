@@ -40,9 +40,8 @@ static struct evo_memory_region *user_region;
 
 // Function prototypes
 static int init_memory_management(void);
-static void memory_management(void);
-static int __init evo_memory_init(void);
-static void __exit evo_memory_exit(void);
+static int evo_memory_init(void);
+static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 
@@ -94,37 +93,28 @@ static int init_memory_management(void)
     return 0;
 }
 
-// Main memory management function
-static void memory_management(void)
+static int evo_memory_init(void)
 {
     int ret;
-
-    printk(KERN_INFO "EvoOS: Initializing advanced memory management\n");
-
+    printk(KERN_INFO "EvoOS: Loading memory management module\n");
     ret = init_memory_management();
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to initialize memory management\n");
-        return;
+        return ret;
     }
 
     // Register memory shrinker
     ret = register_shrinker(&evo_shrinker);
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
-        return;
+        return ret;
     }
 
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
-}
-
-static int __init evo_memory_init(void)
-{
-    printk(KERN_INFO "EvoOS: Loading memory management module\n");
-    memory_management();
     return 0;
 }
 
-static void __exit evo_memory_exit(void)
+static void evo_memory_exit(void)
 {
     printk(KERN_INFO "EvoOS: Unloading memory management module\n");
     // Clean up resources
