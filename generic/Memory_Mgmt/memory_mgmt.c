@@ -11,13 +11,15 @@
 #include <linux/uaccess.h>
 #include <linux/lsm_hooks.h>
 #include <linux/printk.h>
-#include <linux/compiler_types.h> // Ensure the `unlikely` function is declared
+#include <linux/compiler.h> // Ensure the `unlikely` function is declared
 
 #define CONFIG_PAGE_OFFSETUL 0xC0000000UL
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
 MODULE_DESCRIPTION("Advanced Memory Management Module for EvoOS");
+
+
 
 // Structure for page table entry
 struct evo_pte {
@@ -43,18 +45,13 @@ static struct evo_memory_region *user_region;
 
 // Function prototypes
 static int init_memory_management(void);
-static void *evo_alloc_memory(unsigned long size, int flags);
-static void evo_free_memory(void *ptr, int flags);
-static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address);
+unsigned long some_variable; // Example, add semicolons where needed;
 static int evo_memory_init(void);
 static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
-extern void init_rootfs(void);
-extern void parse_early_param(void);
-extern void parse_early_options(void);
-unsigned long __read_once_word_nocheck(const void *addr);
-unsigned long read_word_at_a_time(const void *addr);
+
+
 
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
@@ -101,37 +98,37 @@ static int init_memory_management(void)
 }
 
 // Function to allocate memory
-static void *evo_alloc_memory(unsigned long size, int flags)
-{
-    if (flags & GFP_KERNEL)
-        return kmalloc(size, flags);
-    else
-        return vmalloc(size);
-}
+// static void *evo_alloc_memory(unsigned long size, int flags)
+// {
+//     if (flags & GFP_KERNEL)
+//         return kmalloc(size, flags);
+//     else
+//         return vmalloc(size);
+// }
 
 // Function to free memory
-static void evo_free_memory(void *ptr, int flags)
-{
-    if (flags & GFP_KERNEL)
-        kfree(ptr);
-    else
-        vfree(ptr);
-}
+// static void evo_free_memory(void *ptr, int flags)
+// {
+//     if (flags & GFP_KERNEL)
+//         kfree(ptr);
+//     else
+//         vfree(ptr);
+// }
 
 // Function to handle page faults
-static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address)
-{
-    struct page *page;
+// static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address)
+// {
+//     struct page *page;
 
-    page = alloc_page(GFP_KERNEL);
-    if (!page)
-        return VM_FAULT_OOM;
+//     page = alloc_page(GFP_KERNEL);
+//     if (!page)
+//         return VM_FAULT_OOM;
 
-    if (vm_insert_page(vma, address, page))
-        return VM_FAULT_SIGBUS;
+//     if (vm_insert_page(vma, address, page))
+//         return VM_FAULT_SIGBUS;
 
-    return VM_FAULT_NOPAGE;
-}
+//     return VM_FAULT_NOPAGE;
+// }
 
 static int evo_memory_init(void)
 {
@@ -144,15 +141,16 @@ static int evo_memory_init(void)
     }
 
     // Register memory shrinker
-    ret = register_shrinker(&evo_shrinker, "evo_shrinker");
+    ret = register_shrinker(&evo_shrinker);
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
         return ret;
     }
-
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
     return 0;
 }
+
+
 
 static void evo_memory_exit(void)
 {
@@ -164,6 +162,8 @@ static void evo_memory_exit(void)
     vfree(kernel_region->page_table);
     kfree(kernel_region);
 }
+
+
 
 module_init(evo_memory_init);
 module_exit(evo_memory_exit);
