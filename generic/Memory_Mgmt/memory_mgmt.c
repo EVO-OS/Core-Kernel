@@ -64,7 +64,7 @@ static int init_memory_management(void)
     if (!kernel_region)
         return -ENOMEM;
 
-    kernel_region->start_address = PAGE_OFFSET;
+    kernel_region->start_address = 0xC0000000; // Example hardcoded value
     kernel_region->end_address = (unsigned long)high_memory;
     kernel_region->page_table = vzalloc(sizeof(struct evo_page_table));
     if (!kernel_region->page_table) {
