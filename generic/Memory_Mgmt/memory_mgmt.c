@@ -7,14 +7,6 @@
 #include <linux/mman.h>
 #include <linux/shrinker.h>
 
-#ifndef CONFIG_PAGE_OFFSET
-#define CONFIG_PAGE_OFFSET 0xC0000000
-#endif
-
-#ifndef PAGE_OFFSET
-#define PAGE_OFFSET ((unsigned long)CONFIG_PAGE_OFFSET)
-#endif
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
 MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
@@ -106,7 +98,7 @@ static void memory_management(void)
     }
 
     // Register memory shrinker
-    ret = register_shrinker(&evo_shrinker, "evo_shrinker");
+    ret = register_shrinker(&evo_shrinker);
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
         return;
