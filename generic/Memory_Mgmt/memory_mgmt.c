@@ -16,11 +16,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
 MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
 
-// Add missing semicolons
-static __no_sanitize_or_inline unsigned long __read_once_word_nocheck(const void *addr) { return *(const unsigned long *)addr; }
-
-static __no_kasan_or_inline unsigned long read_word_at_a_time(const void *addr) { return *(const unsigned long *)addr; }
-
 // Structure for page table entry
 struct evo_pte {
     unsigned long physical_address;
@@ -45,20 +40,15 @@ static struct evo_memory_region *user_region;
 
 // Function prototypes
 static int init_memory_management(void);
-static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
-static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static void memory_management(void);
 static int __init evo_memory_init(void);
 static void __exit evo_memory_exit(void);
+static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
+static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 
 // Define 'unlikely' if not already defined
 #ifndef unlikely
 #define unlikely(x) __builtin_expect(!!(x), 0)
-#endif
-
-// Define or correct the CONFIG_PAGE_OFFSETUL macro
-#ifndef CONFIG_PAGE_OFFSETUL
-#define CONFIG_PAGE_OFFSETUL 0xC0000000UL
 #endif
 
 static struct shrinker evo_shrinker = {
@@ -118,7 +108,7 @@ static void memory_management(void)
     }
 
     // Register memory shrinker
-    ret = register_shrinker(&evo_shrinker, "evo_shrinker");
+    ret = register_shrinker(&evo_shrinker);
     if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
         return;
@@ -127,7 +117,6 @@ static void memory_management(void)
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
 }
 
-// Support for Dynamically Loadable Kernel Modules (DLKMs)
 static int __init evo_memory_init(void)
 {
     printk(KERN_INFO "EvoOS: Loading memory management module\n");
