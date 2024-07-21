@@ -11,6 +11,9 @@
 #include <linux/uaccess.h>
 #include <linux/lsm_hooks.h>
 #include <linux/printk.h>
+#include <linux/compiler.h>
+
+#define CONFIG_PAGE_OFFSETUL 0xC0000000
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
@@ -57,6 +60,7 @@ static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
     .scan_objects = evo_scan_objects,
     .seeks = DEFAULT_SEEKS,
+    .flags = 0,
 };
 
 // Function to initialize memory management
