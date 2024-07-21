@@ -17,7 +17,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
-MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
+MODULE_DESCRIPTION("Advanced Memory Management Module for EvoOS");
 
 // Structure for page table entry
 struct evo_pte {
@@ -51,11 +51,6 @@ static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 
-// Define 'unlikely' if not already defined
-#ifndef unlikely
-#define unlikely(x) __builtin_expect(!!(x), 0)
-#endif
-
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
     .scan_objects = evo_scan_objects,
@@ -71,7 +66,7 @@ static int init_memory_management(void)
     if (!kernel_region)
         return -ENOMEM;
 
-    kernel_region->start_address = 0xC0000000; // Example hardcoded value
+    kernel_region->start_address = CONFIG_PAGE_OFFSETUL;
     kernel_region->end_address = (unsigned long)high_memory;
     kernel_region->page_table = vzalloc(sizeof(struct evo_page_table));
     if (!kernel_region->page_table) {
@@ -153,6 +148,16 @@ static int evo_memory_init(void)
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
     return 0;
 }
+
+// Register memory shrinker
+ret = register_shrinker(&evo_shrinker);
+if (ret) {
+    printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
+    return ret;
+}
+
+printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
+return 0;
 
 static void evo_memory_exit(void)
 {
