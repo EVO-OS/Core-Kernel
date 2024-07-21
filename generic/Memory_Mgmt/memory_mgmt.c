@@ -40,6 +40,9 @@ static struct evo_memory_region *user_region;
 
 // Function prototypes
 static int init_memory_management(void);
+static void *evo_alloc_memory(unsigned long size, int flags);
+static void evo_free_memory(void *ptr, int flags);
+static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address);
 static int evo_memory_init(void);
 static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
@@ -91,6 +94,39 @@ static int init_memory_management(void)
     }
 
     return 0;
+}
+
+// Function to allocate memory
+static void *evo_alloc_memory(unsigned long size, int flags)
+{
+    if (flags & GFP_KERNEL)
+        return kmalloc(size, flags);
+    else
+        return vmalloc(size);
+}
+
+// Function to free memory
+static void evo_free_memory(void *ptr, int flags)
+{
+    if (flags & GFP_KERNEL)
+        kfree(ptr);
+    else
+        vfree(ptr);
+}
+
+// Function to handle page faults
+static int evo_page_fault_handler(struct vm_area_struct *vma, unsigned long address)
+{
+    struct page *page;
+
+    page = alloc_page(GFP_KERNEL);
+    if (!page)
+        return VM_FAULT_OOM;
+
+    if (vm_insert_page(vma, address, page))
+        return VM_FAULT_SIGBUS;
+
+    return VM_FAULT_NOPAGE;
 }
 
 static int evo_memory_init(void)
