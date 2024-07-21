@@ -11,9 +11,9 @@
 #include <linux/uaccess.h>
 #include <linux/lsm_hooks.h>
 #include <linux/printk.h>
-#include <linux/compiler.h>
+#include <linux/compiler_types.h> // Ensure the `unlikely` function is declared
 
-#define CONFIG_PAGE_OFFSETUL 0xC0000000
+#define CONFIG_PAGE_OFFSETUL 0xC0000000UL
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
@@ -50,6 +50,11 @@ static int evo_memory_init(void);
 static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
+extern void init_rootfs(void);
+extern void parse_early_param(void);
+extern void parse_early_options(void);
+unsigned long __read_once_word_nocheck(const void *addr);
+unsigned long read_word_at_a_time(const void *addr);
 
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
@@ -148,16 +153,6 @@ static int evo_memory_init(void)
     printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
     return 0;
 }
-
-// Register memory shrinker
-ret = register_shrinker(&evo_shrinker);
-if (ret) {
-    printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
-    return ret;
-}
-
-printk(KERN_INFO "EvoOS: Memory management initialized successfully\n");
-return 0;
 
 static void evo_memory_exit(void)
 {
