@@ -6,6 +6,11 @@
 #include <linux/vmalloc.h>
 #include <linux/mman.h>
 #include <linux/shrinker.h>
+#include <linux/fs.h>
+#include <linux/cred.h>
+#include <linux/uaccess.h>
+#include <linux/lsm_hooks.h>
+#include <linux/printk.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
@@ -40,6 +45,16 @@ static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_c
 static void memory_management(void);
 static int evo_memory_init(void);
 static void evo_memory_exit(void);
+
+// Define 'unlikely' if not already defined
+#ifndef unlikely
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
+
+// Define or correct the CONFIG_PAGE_OFFSETUL macro
+#ifndef CONFIG_PAGE_OFFSETUL
+#define CONFIG_PAGE_OFFSETUL 0xC0000000UL
+#endif
 
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
