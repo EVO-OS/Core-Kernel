@@ -51,8 +51,6 @@ static void evo_memory_exit(void);
 static unsigned long evo_count_objects(struct shrinker *shrinker, struct shrink_control *sc);
 static unsigned long evo_scan_objects(struct shrinker *shrinker, struct shrink_control *sc);
 
-
-
 static struct shrinker evo_shrinker = {
     .count_objects = evo_count_objects,
     .scan_objects = evo_scan_objects,
