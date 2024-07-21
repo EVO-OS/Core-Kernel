@@ -106,7 +106,8 @@ static void memory_management(void)
     }
 
     // Register memory shrinker
-    if (register_shrinker(&evo_shrinker, "evo_shrinker")) {
+    ret = register_shrinker(&evo_shrinker, "evo_shrinker");
+    if (ret) {
         printk(KERN_ERR "EvoOS: Failed to register memory shrinker\n");
         return;
     }
