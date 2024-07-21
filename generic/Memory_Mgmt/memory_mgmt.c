@@ -16,10 +16,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("EvoOS Team");
 MODULE_DESCRIPTION("EvoOS Advanced Memory Management Module");
 
-#ifndef __always_inline
-#define __always_inline inline __attribute__((always_inline))
-#endif
-
 // Structure for page table entry
 struct evo_pte {
     unsigned long physical_address;
